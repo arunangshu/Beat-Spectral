@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nemona's Beat Detector 🎵</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #111;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 { font-weight: 300; letter-spacing: 2px; }
+
+        #controls {
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: #ff4757;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #ff4757;
+        }
+
+        canvas {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+        }
+
+        /* The "Beat" Indicator - Blue Glow Top Half */
+        #beat-light {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: transparent;
+            pointer-events: none;
+            transition: background 0.1s ease-out, box-shadow 0.1s ease-out;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        /* Beat Hit Effect on Background */
+        .beat-hit {
+            background-color: #1a1a1a !important; 
+        }
+
+        /* Player Container */
+        #player-container {
+            display: none;
+            align-items: center;
+            gap: 20px;
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.95), rgba(30, 30, 50, 0.9));
+            padding: 20px 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 150, 255, 0.2), inset 0 0 20px rgba(0, 100, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            margin-top: 15px;
+        }
+
+        /* Player Controls */
+        #player-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 300px;
+        }
+
+        /* Play/Pause Button */
+        #play-pause-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 150, 255, 0.6);
+            background: linear-gradient(135deg, rgba(0, 100, 200, 0.3), rgba(0, 50, 150, 0.5));
+            color: #00d4ff;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.3), inset 0 0 10px rgba(0, 150, 255, 0.2);
+        }
+
+        #play-pause-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 200, 255, 0.5), inset 0 0 15px rgba(0, 200, 255, 0.3);
+            border-color: #00d4ff;
+        }
+
+        /* Time Display */
+        #time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #00d4ff;
+            font-family: 'Consolas', monospace;
+            text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+
+        /* Seek Slider */
+        #seek-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, rgba(0, 150, 255, 0.3), rgba(0, 100, 200, 0.2));
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 150, 255, 0.2);
+        }
+
+        #seek-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #0096ff);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 200, 255, 0.8), 0 0 30px rgba(0, 150, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: transform 0.2s;
+        }
+
+        #seek-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        #seek-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #0096ff);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 200, 255, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Sensitivity Control */
+        #sensitivity-container {
+            display: none;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.9), rgba(30, 30, 50, 0.85));
+            border-radius: 15px;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.15);
+            z-index: 10;
+        }
+
+        #sensitivity-container label {
+            color: #ff4757;
+            font-size: 0.9em;
+            font-weight: 500;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+        }
+
+        #sensitivity-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 150px;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, rgba(255, 71, 87, 0.3), rgba(200, 50, 70, 0.2));
+            outline: none;
+            cursor: pointer;
+        }
+
+        #sensitivity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b7a, #ff4757);
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(255, 71, 87, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        #sensitivity-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b7a, #ff4757);
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(255, 71, 87, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        #sensitivity-value {
+            color: #ff4757;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+            min-width: 40px;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+        }
+
+        /* Song Title */
+        #song-title {
+            color: #fff;
+            font-size: 0.95em;
+            font-weight: 500;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Controls Row */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>BEAT <span style="color:#ff4757">SPECTRAL</span></h1>
+    
+    <div id="controls">
+        <label for="audio-upload" class="btn">📂 Upload Song</label>
+        <input type="file" id="audio-upload" accept="audio/*">
+        <button id="capture-btn" class="btn" style="background: #9b59b6;">🎤 Capture System Audio</button>
+    </div>
+
+    <div id="status">Upload a file to start visualization</div>
+
+    <!-- Player Container -->
+    <div id="player-container">
+        <div id="player-controls">
+            <div id="song-title">No song loaded</div>
+            <div class="controls-row">
+                <button id="play-pause-btn">▶</button>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+                    <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.1">
+                    <div id="time-display">
+                        <span id="current-time">0:00</span>
+                        <span id="duration">0:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensitivity Control -->
+    <div id="sensitivity-container">
+        <label for="sensitivity-slider">⚡ Beat Sensitivity</label>
+        <input type="range" id="sensitivity-slider" min="0" max="30" value="2">
+        <span id="sensitivity-value">2%</span>
+    </div>
+
+    <div id="beat-light"></div>
+
+    <canvas id="visualizer"></canvas>
+
+    <script>
+    const fileInput = document.getElementById('audio-upload');
+    const captureBtn = document.getElementById('capture-btn');
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+    const status = document.getElementById('status');
+    const beatLight = document.getElementById('beat-light');
+    const playerContainer = document.getElementById('player-container');
+    const sensitivityContainer = document.getElementById('sensitivity-container');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const seekSlider = document.getElementById('seek-slider');
+    const currentTimeDisplay = document.getElementById('current-time');
+    const durationDisplay = document.getElementById('duration');
+    const sensitivitySlider = document.getElementById('sensitivity-slider');
+    const sensitivityValue = document.getElementById('sensitivity-value');
+    const songTitle = document.getElementById('song-title');
+
+    let audioContext;
+    let analyser;
+    let dataArray;
+    let source;
+    let audioBuffer;
+    let isPlaying = false;
+    let startTime = 0;
+    let pauseTime = 0;
+    let animationId;
+    let mediaStream = null;
+    let isCapturing = false;
+    
+    // Variables for your new logic
+    let lastFrameData = null;
+    let isFlashing = false;
+    let sensitivity = 2;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight / 2;
+
+    // Sensitivity slider handler
+    sensitivitySlider.addEventListener('input', function() {
+        sensitivity = parseInt(this.value);
+        sensitivityValue.textContent = sensitivity + '%';
+    });
+
+    // Capture System Audio (Stereo Mix)
+    captureBtn.addEventListener('click', async function() {
+        if (isCapturing) {
+            stopCapture();
+            return;
+        }
+        
+        try {
+            // Stop any current playback
+            stopCurrentPlayback();
+            
+            status.innerText = "Requesting audio capture...";
+            
+            // Request microphone/stereo mix access
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false
+                },
+                video: false
+            });
+            
+            // Set up audio context for capture
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 8192;
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+            
+            // Connect stream to analyser
+            source = audioContext.createMediaStreamSource(mediaStream);
+            source.connect(analyser);
+            // Note: Don't connect to destination to avoid feedback!
+            
+            isCapturing = true;
+            captureBtn.textContent = '⏹️ Stop Capture';
+            captureBtn.style.background = '#e74c3c';
+            
+            // Hide file player controls, show sensitivity
+            playerContainer.style.display = 'none';
+            sensitivityContainer.style.display = 'flex';
+            songTitle.textContent = '🎤 System Audio';
+            
+            status.innerText = "Capturing system audio (Stereo Mix)...";
+            
+            // Start visualization
+            if (!animationId) animate();
+            
+        } catch (err) {
+            console.error('Error capturing audio:', err);
+            status.innerText = "❌ Could not capture audio. Enable Stereo Mix in Windows Sound settings.";
+        }
+    });
+
+    function stopCapture() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+        if (source) {
+            source.disconnect();
+            source = null;
+        }
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        
+        isCapturing = false;
+        lastFrameData = null;
+        captureBtn.textContent = '🎤 Capture System Audio';
+        captureBtn.style.background = '#9b59b6';
+        status.innerText = "Upload a file or capture system audio";
+        sensitivityContainer.style.display = 'none';
+        
+        // Clear canvas
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function stopCurrentPlayback() {
+        // Stop file playback
+        if (source && !isCapturing) {
+            try {
+                source.stop();
+                source.disconnect();
+            } catch(err) {}
+        }
+        
+        // Stop capture if active
+        if (isCapturing) {
+            stopCapture();
+        }
+        
+        // Cancel animation
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        
+        // Close audio context
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+        
+        // Reset state
+        isPlaying = false;
+        startTime = 0;
+        pauseTime = 0;
+        lastFrameData = null;
+        isFlashing = false;
+        audioBuffer = null;
+        source = null;
+    }
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        status.innerText = "Loading Audio...";
+        
+        // Stop any current playback or capture
+        stopCurrentPlayback();
+        
+        // Reset UI
+        playPauseBtn.textContent = '▶';
+        seekSlider.value = 0;
+        currentTimeDisplay.textContent = '0:00';
+        durationDisplay.textContent = '0:00';
+        
+        // Set song title
+        songTitle.textContent = file.name.replace(/\.[^/.]+$/, "");
+        
+        const reader = new FileReader();
+        reader.onload = (event) => initAudio(event.target.result);
+        reader.readAsArrayBuffer(file);
+    });
+
+
+    function initAudio(arrayBuffer) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 8192; 
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+
+        audioContext.decodeAudioData(arrayBuffer, function(buffer) {
+            audioBuffer = buffer;
+            
+            // Show player controls
+            playerContainer.style.display = 'flex';
+            sensitivityContainer.style.display = 'flex';
+            
+            // Set duration
+            durationDisplay.textContent = formatTime(buffer.duration);
+            seekSlider.max = Math.floor(buffer.duration);
+            
+            // Start playing
+            startPlayback(0);
+            status.innerText = "";
+        });
+    }
+
+    function startPlayback(offset) {
+        if (source) {
+            source.disconnect();
+            source.stop();
+        }
+        
+        source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+        
+        source.onended = function() {
+            if (isPlaying && pauseTime >= audioBuffer.duration - 0.1) {
+                // Song ended naturally
+                isPlaying = false;
+                playPauseBtn.textContent = '▶';
+                pauseTime = 0;
+                seekSlider.value = 0;
+                currentTimeDisplay.textContent = '0:00';
+            }
+        };
+        
+        startTime = audioContext.currentTime - offset;
+        source.start(0, offset);
+        isPlaying = true;
+        playPauseBtn.textContent = '⏸';
+        
+        if (!animationId) animate();
+    }
+
+    function togglePlayPause() {
+        if (!audioBuffer) return;
+        
+        if (isPlaying) {
+            // Pause
+            pauseTime = audioContext.currentTime - startTime;
+            source.stop();
+            isPlaying = false;
+            playPauseBtn.textContent = '▶';
+        } else {
+            // Resume
+            startPlayback(pauseTime);
+        }
+    }
+
+    playPauseBtn.addEventListener('click', togglePlayPause);
+
+    seekSlider.addEventListener('input', function() {
+        if (!audioBuffer) return;
+        const seekTime = parseFloat(this.value);
+        currentTimeDisplay.textContent = formatTime(seekTime);
+    });
+
+    seekSlider.addEventListener('change', function() {
+        if (!audioBuffer) return;
+        const seekTime = parseFloat(this.value);
+        pauseTime = seekTime;
+        if (isPlaying) {
+            startPlayback(seekTime);
+        } else {
+            currentTimeDisplay.textContent = formatTime(seekTime);
+        }
+    });
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateSeekSlider() {
+        if (!audioBuffer || !isPlaying) return;
+        const currentTime = audioContext.currentTime - startTime;
+        if (currentTime <= audioBuffer.duration) {
+            seekSlider.value = currentTime;
+            currentTimeDisplay.textContent = formatTime(currentTime);
+            pauseTime = currentTime;
+        }
+    }
+
+    // --- YOUR NEW LOGIC HERE ---
+    function detectBeat(data) {
+        // Number of bins to analyze (low frequencies where drums live)
+        const numBins = 4096;
+        const percentThreshold = sensitivity / 100; // Convert 0-100% slider to 0-1 decimal
+        const percentRequired = 0.35; // 35% of bins must differ
+        
+        // Skip if we don't have previous frame data
+        if (!lastFrameData) {
+            lastFrameData = new Uint8Array(numBins);
+            for (let i = 0; i < numBins; i++) {
+                lastFrameData[i] = data[i];
+            }
+            return;
+        }
+        
+        // Count how many bins differ by more than the % threshold
+        let binsChanged = 0;
+        for (let i = 0; i < numBins; i++) {
+            const prev = lastFrameData[i];
+            const curr = data[i];
+            const diff = curr - prev;
+            
+            // Calculate % change relative to the max of current/previous (avoid div by 0)
+            const maxVal = Math.max(prev, curr, 1); // Use at least 1 to avoid division by zero
+            const percentChange = diff / maxVal;
+            
+            if (percentChange > percentThreshold) {
+                binsChanged++;
+            }
+        }
+        
+        // Calculate percentage of bins that changed
+        const percentChanged = binsChanged / numBins;
+        
+        // Trigger flash if at least 50% of bins changed significantly
+        if (percentChanged >= percentRequired && !isFlashing) {
+            triggerFlash();
+        }
+        
+        // Store current frame for next comparison
+        for (let i = 0; i < numBins; i++) {
+            lastFrameData[i] = data[i];
+        }
+    }
+
+    // Disco color generator
+    function getRandomDiscoColor() {
+        const discoColors = [
+            { r: 255, g: 0, b: 128 },    // Hot pink
+            { r: 0, g: 255, b: 255 },    // Cyan
+            { r: 255, g: 255, b: 0 },    // Yellow
+            { r: 255, g: 0, b: 255 },    // Magenta
+            { r: 0, g: 255, b: 128 },    // Spring green
+            { r: 255, g: 128, b: 0 },    // Orange
+            { r: 128, g: 0, b: 255 },    // Purple
+            { r: 0, g: 128, b: 255 },    // Sky blue
+            { r: 255, g: 0, b: 0 },      // Red
+            { r: 0, g: 255, b: 0 },      // Green
+        ];
+        return discoColors[Math.floor(Math.random() * discoColors.length)];
+    }
+
+    function triggerFlash() {
+        isFlashing = true;
+        
+        // Get random disco color
+        const color = getRandomDiscoColor();
+        const colorBright = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+        const colorMid = `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`;
+        
+        // Turn Disco Glow ON instantly
+        beatLight.style.transition = "none";
+        beatLight.style.background = `linear-gradient(to bottom, ${colorBright} 0%, ${colorMid} 50%, transparent 100%)`;
+
+        // Force reflow to apply instant change
+        beatLight.offsetHeight;
+
+        // Turn Glow OFF with smooth 100ms fade
+        setTimeout(() => {
+            beatLight.style.transition = "background 0.1s ease-out, box-shadow 0.1s ease-out";
+            beatLight.style.background = "transparent";
+            
+            // Allow next flash after fade completes
+            setTimeout(() => {
+                isFlashing = false;
+            }, 80);
+        }, 20);
+    }
+
+    function animate() {
+        animationId = requestAnimationFrame(animate);
+        analyser.getByteFrequencyData(dataArray);
+
+        // Draw Background
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Update seek slider
+        updateSeekSlider();
+
+        // Run Logic
+        detectBeat(dataArray);
+
+        // Draw Bars
+        const barWidth = (canvas.width / dataArray.length) * 2.5;
+        let x = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            const barHeight = dataArray[i];
+            const r = barHeight + (25 * (i/dataArray.length));
+            const g = 250 * (i/dataArray.length);
+            const b = 50;
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+            x += barWidth + 1;
+        }
+    }
+</script>
+</body>
+</html>
