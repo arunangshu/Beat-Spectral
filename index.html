@@ -50,19 +50,21 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 50%;
+            height: 40%;
+            z-index: 2;
         }
 
-        /* The "Beat" Indicator - Blue Glow Top Half */
+        /* The "Beat" Indicator - Disco Glow Top 70% */
         #beat-light {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 50%;
+            height: 70%;
             background: transparent;
             pointer-events: none;
             transition: background 0.1s ease-out, box-shadow 0.1s ease-out;
+            z-index: 10;
         }
 
         #status {
@@ -691,10 +693,11 @@
 
         // Draw Bars
         const barWidth = (canvas.width / dataArray.length) * 2.5;
+        const heightScale = canvas.height / 280; // Scale bars to fit canvas
         let x = 0;
         for (let i = 0; i < dataArray.length; i++) {
-            const barHeight = dataArray[i];
-            const r = barHeight + (25 * (i/dataArray.length));
+            const barHeight = (dataArray[i]+(dataArray[i]==255?Math.random()*25:0)) * heightScale;
+            const r = dataArray[i] + (25 * (i/dataArray.length));
             const g = 250 * (i/dataArray.length);
             const b = 50;
             ctx.fillStyle = `rgb(${r},${g},${b})`;
