@@ -254,6 +254,41 @@
             align-items: center;
             gap: 15px;
         }
+
+        /* Style Toggle Button */
+        #style-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(40, 40, 60, 0.9), rgba(20, 20, 40, 0.95));
+            border: 1px solid rgba(0, 200, 255, 0.4);
+            color: #00d4ff;
+            padding: 10px 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            z-index: 100;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 150, 255, 0.2);
+        }
+
+        #style-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(0, 200, 255, 0.4);
+            border-color: #00d4ff;
+        }
+
+        /* Ripple Canvas */
+        #ripple-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
+        }
     </style>
 </head>
 <body>
@@ -292,7 +327,11 @@
         <span id="sensitivity-value">2%</span>
     </div>
 
+    <!-- Style Toggle -->
+    <button id="style-toggle">✨ Style: Glow</button>
+
     <div id="beat-light"></div>
+    <canvas id="ripple-canvas"></canvas>
 
     <canvas id="visualizer"></canvas>
 
@@ -312,12 +351,19 @@
     const sensitivitySlider = document.getElementById('sensitivity-slider');
     const sensitivityValue = document.getElementById('sensitivity-value');
     const songTitle = document.getElementById('song-title');
+    const styleToggle = document.getElementById('style-toggle');
+    const rippleCanvas = document.getElementById('ripple-canvas');
+    const rippleCtx = rippleCanvas.getContext('2d');
 
     let audioContext;
     let analyser;
     let dataArray;
     let source;
     let audioBuffer;
+    
+    // Style and ripple variables
+    let currentStyle = 'glow'; // 'glow' or 'ripples'
+    let ripples = [];
     let isPlaying = false;
     let startTime = 0;
     let pauseTime = 0;
@@ -332,6 +378,22 @@
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight / 2;
+    rippleCanvas.width = window.innerWidth;
+    rippleCanvas.height = window.innerHeight;
+
+    // Style toggle handler
+    styleToggle.addEventListener('click', function() {
+        if (currentStyle === 'glow') {
+            currentStyle = 'ripples';
+            styleToggle.textContent = '🌊 Style: Ripples';
+            beatLight.style.background = 'transparent';
+        } else {
+            currentStyle = 'glow';
+            styleToggle.textContent = '✨ Style: Glow';
+            ripples = [];
+            rippleCtx.clearRect(0, 0, rippleCanvas.width, rippleCanvas.height);
+        }
+    });
 
     // Sensitivity slider handler
     sensitivitySlider.addEventListener('input', function() {
@@ -655,26 +717,68 @@
         
         // Get random disco color
         const color = getRandomDiscoColor();
-        const colorBright = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
-        const colorMid = `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`;
         
-        // Turn Disco Glow ON instantly
-        beatLight.style.transition = "none";
-        beatLight.style.background = `linear-gradient(to bottom, ${colorBright} 0%, ${colorMid} 50%, transparent 100%)`;
-
-        // Force reflow to apply instant change
-        beatLight.offsetHeight;
-
-        // Turn Glow OFF with smooth 100ms fade
-        setTimeout(() => {
-            beatLight.style.transition = "background 0.1s ease-out, box-shadow 0.1s ease-out";
-            beatLight.style.background = "transparent";
+        if (currentStyle === 'glow') {
+            // GLOW STYLE
+            const colorBright = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
+            const colorMid = `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`;
             
-            // Allow next flash after fade completes
+            beatLight.style.transition = "none";
+            beatLight.style.background = `linear-gradient(to bottom, ${colorBright} 0%, ${colorMid} 50%, transparent 100%)`;
+            beatLight.offsetHeight;
+
             setTimeout(() => {
-                isFlashing = false;
-            }, 80);
-        }, 20);
+                beatLight.style.transition = "background 0.1s ease-out";
+                beatLight.style.background = "transparent";
+                setTimeout(() => { isFlashing = false; }, 80);
+            }, 20);
+        } else {
+            // RIPPLES STYLE
+            // Create 1-3 ripples at random locations in top 70%
+            const numRipples = Math.floor(Math.random() * 3) + 1;
+            const spawnHeight = window.innerHeight * 0.7; // Spawn in top 70%
+            for (let i = 0; i < numRipples; i++) {
+                ripples.push({
+                    x: Math.random() * rippleCanvas.width,
+                    y: Math.random() * spawnHeight,
+                    radius: 0,
+                    maxRadius: 150 + Math.random() * 150,
+                    color: color,
+                    alpha: 1,
+                    lineWidth: 3 + Math.random() * 3
+                });
+            }
+            setTimeout(() => { isFlashing = false; }, 50);
+        }
+    }
+
+    // Ripple animation loop
+    function updateRipples() {
+        rippleCtx.clearRect(0, 0, rippleCanvas.width, rippleCanvas.height);
+        
+        for (let i = ripples.length - 1; i >= 0; i--) {
+            const ripple = ripples[i];
+            
+            // Draw ripple
+            rippleCtx.beginPath();
+            rippleCtx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+            rippleCtx.strokeStyle = `rgba(${ripple.color.r}, ${ripple.color.g}, ${ripple.color.b}, ${ripple.alpha})`;
+            rippleCtx.lineWidth = ripple.lineWidth;
+            rippleCtx.shadowBlur = 20;
+            rippleCtx.shadowColor = `rgba(${ripple.color.r}, ${ripple.color.g}, ${ripple.color.b}, ${ripple.alpha})`;
+            rippleCtx.stroke();
+            
+            // Update ripple
+            ripple.radius += 4;
+            ripple.alpha -= 0.02;
+            ripple.lineWidth *= 0.98;
+            
+            // Remove faded ripples
+            if (ripple.alpha <= 0 || ripple.radius > ripple.maxRadius) {
+                ripples.splice(i, 1);
+            }
+        }
+        rippleCtx.shadowBlur = 0;
     }
 
     function animate() {
@@ -684,6 +788,11 @@
         // Draw Background
         ctx.fillStyle = '#111';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Update ripples if in ripple mode
+        if (currentStyle === 'ripples') {
+            updateRipples();
+        }
 
         // Update seek slider
         updateSeekSlider();
