@@ -1,6 +1,6 @@
 # 🎵 Beat Spectral
 
-A browser-based beat detector and audio visualizer with disco-style visual effects. Upload a song or capture system audio to see beats flash across your screen!
+A browser-based beat detector and audio visualizer with disco-style visual effects. Upload a song or capture system audio to see beats flash across your screen with a dancing character that syncs to your tempo!
 
 ![Beat Spectral](https://img.shields.io/badge/Beat-Spectral-ff4757?style=for-the-badge)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
@@ -10,10 +10,15 @@ A browser-based beat detector and audio visualizer with disco-style visual effec
 
 - **🎧 Audio File Upload** - Load any audio file (MP3, WAV, OGG, etc.)
 - **🎤 System Audio Capture** - Capture and visualize any audio playing on your system (Spotify, YouTube, etc.)
-- **🌈 Disco Beat Flash** - Random colorful glow effects on each detected beat
+- **🌈 Disco Beat Flash** - Random colorful glow or ripple effects on each detected beat
+- **🌊 Dual Visualization Styles** - Toggle between "Glow" and "Ripples" modes
 - **📊 Real-time Frequency Visualizer** - See the audio spectrum in real-time
 - **⚡ Adjustable Sensitivity** - Fine-tune beat detection with a percentage-based threshold
 - **🎛️ Futuristic Player Controls** - Play/pause and seek through uploaded tracks
+- **🦋 Tap Tempo** - Tap spacebar or button to set BPM for the dancing character
+- **💃 Dancing Character** - A looping dance video that syncs playback speed to your BPM
+- **✨ Twinkling Stars** - Dynamic star field that appears when music is playing
+- **🎨 Energy-Reactive Background** - Color-changing glow that pulses with audio energy and changes color on each beat
 
 ## 🚀 Getting Started
 
@@ -41,6 +46,16 @@ This lets you visualize beats from **any** audio source (YouTube, Spotify, games
 #### Linux Setup:
 - Use PulseAudio loopback module: `pactl load-module module-loopback`
 
+## 🦋 Tap Tempo & Dancing Character
+
+1. Play some music (upload or capture system audio)
+2. Press **Spacebar** or click the **🦋 TAP** button in rhythm with the beat
+3. After a few taps, the BPM will be calculated
+4. The dancing character will automatically sync to your tempo!
+5. Fine-tune with **+/-** buttons or **Reset** to start over
+
+The dance video pauses when music is paused and resumes when you play again.
+
 ## 🎛️ Beat Detection Algorithm
 
 The beat detection uses a **bin-by-bin percentage change** algorithm:
@@ -49,7 +64,7 @@ The beat detection uses a **bin-by-bin percentage change** algorithm:
 2. Compares each bin's value to the previous frame
 3. Calculates the **percentage change** for each bin
 4. If **≥35% of bins** have changed more than the sensitivity threshold, a beat is triggered
-5. A random disco color flashes across the top half of the screen
+5. A random disco color flashes or ripples spawn across the screen
 
 ### Sensitivity Control
 - **0%** - Most sensitive (any change triggers a beat)
@@ -58,7 +73,7 @@ The beat detection uses a **bin-by-bin percentage change** algorithm:
 ## 🛠️ Technical Details
 
 - **Web Audio API** - For audio analysis and playback
-- **Canvas API** - For real-time frequency visualization
+- **Canvas API** - For real-time frequency visualization, ripples, and stars
 - **getUserMedia API** - For system audio capture
 - **FFT Size**: 8192 (provides 4096 frequency bins)
 - **Animation**: 60fps via `requestAnimationFrame`
@@ -68,12 +83,13 @@ The beat detection uses a **bin-by-bin percentage change** algorithm:
 ```
 Beat-Spectral/
 ├── index.html    # Main application (single file)
+├── dance.webm    # Dancing character video (16 beats)
 └── README.md     # This file
 ```
 
 ## 🎨 Color Palette
 
-The disco flash randomly selects from these colors:
+The disco effects randomly select from these colors (ensuring consecutive colors are visually distinct):
 - Hot Pink • Cyan • Yellow • Magenta
 - Spring Green • Orange • Purple • Sky Blue
 - Red • Green
@@ -83,6 +99,7 @@ The disco flash randomly selects from these colors:
 - **CORS Restrictions**: Cannot load audio from external URLs directly (use file upload instead)
 - **Stereo Mix**: Availability depends on your audio drivers
 - **Browser Support**: Works best in Chrome, Edge, and Firefox
+- **Dance Video**: Requires `dance.webm` file in the same directory
 
 ## 📄 License
 
