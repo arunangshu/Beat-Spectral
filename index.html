@@ -621,6 +621,12 @@
         videoDuration = danceVideo.duration;
         console.log('Video duration:', videoDuration, 'seconds');
     });
+    
+    // Also check if metadata is already loaded (cached video)
+    if (danceVideo.readyState >= 1) {
+        videoDuration = danceVideo.duration;
+        console.log('Video duration (cached):', videoDuration, 'seconds');
+    }
     let isPlaying = false;
     let startTime = 0;
     let pauseTime = 0;
